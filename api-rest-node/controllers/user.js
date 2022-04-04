@@ -2,6 +2,7 @@
 var validator=require('validator');
 var User = require('../models/user');
 var bcrypt = require('bcrypt-nodejs');
+const { checkout } = require('../routes/user');
 var controller = {
     probando: function(req,res){
         return res.status(200).send({
@@ -76,6 +77,54 @@ var controller = {
             });
         }
 
+        
+    },
+    login: function(req,res){
+        //recoger datos
+        var params = req.body;
+        //validar datos
+        var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
+        var validate_password = !validator.isEmpty(params.password);
+        if(!validate_email || !validate_password){
+            return res.status(500).send({
+                message:"Datos incorrectos"
+            });
+        }
+        //buscar usuarios con email
+        User.findOne({email:params.email.toLowerCase()},(err,user)=>{
+            if(err){
+                return res.status(500).send({
+                    message:"Error al intentar identificarse"
+                });
+            }
+            if(!user){
+                return res.status(404).send({
+                    message:"El usuario no existe"
+                });
+            }
+            //comprobar la contraseña
+            bcrypt.compare(params.password, user.password, (err,check)=>{
+                if(err){
+
+                }
+                if(check){
+                    
+                    //generar token jwt
+                    //limpiar objeto
+                    user.password = undefined;
+                    //devolver datos
+                    return res.status(200).send({
+                        status:'success',
+                        user
+                    });
+                }else{
+                    return res.status(200).send({
+                        message:"Las credenciales no son correctas"
+                    });
+                }
+            });
+            
+        });
         
     }
 };
