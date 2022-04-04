@@ -2,6 +2,7 @@
 var validator=require('validator');
 var User = require('../models/user');
 var bcrypt = require('bcrypt-nodejs');
+var jwt = require('../services/jwt');
 const { checkout } = require('../routes/user');
 var controller = {
     probando: function(req,res){
@@ -110,13 +111,20 @@ var controller = {
                 if(check){
                     
                     //generar token jwt
-                    //limpiar objeto
-                    user.password = undefined;
-                    //devolver datos
-                    return res.status(200).send({
-                        status:'success',
-                        user
-                    });
+                    if(params.gettoken){
+                        return res.status(200).send({
+                            token:jwt.createToken(user)
+                        });
+                    }else{
+                        //limpiar objeto
+                        user.password = undefined;
+                        //devolver datos
+                        return res.status(200).send({
+                            status:'success',
+                            user
+                        });
+                    }
+                    
                 }else{
                     return res.status(200).send({
                         message:"Las credenciales no son correctas"
