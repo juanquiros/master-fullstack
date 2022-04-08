@@ -1,0 +1,15 @@
+npm install -g npm@latest
+npm cache clean --force
+npm set audit false
+npm uninstall -g angular-cli
+npm uninstall -g @angular-cli
+npm cache clean --force
+cls
+npm install -g @angular/cli
+-------Instalado
+-......Crear proyecto
+1) ir al directorio para el proyecto
+2) ng new
+----no generar routing angular
+npm install 
+npm update

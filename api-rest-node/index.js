@@ -4,6 +4,7 @@ var mongoose = require('mongoose');
 var app =require('./app');
 var port = process.env.port || 3999;
 
+
 mongoose.Promise = global.Promise;
 
 mongoose.connect('mongodb+srv://usuario:password01!@cluster0.bqggf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',{useNewUrlParser: true})

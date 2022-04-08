@@ -3,7 +3,9 @@ var validator=require('validator');
 var User = require('../models/user');
 var bcrypt = require('bcrypt-nodejs');
 var jwt = require('../services/jwt');
-const { checkout } = require('../routes/user');
+var fs = require('fs');
+var path = require('path');
+
 var controller = {
     probando: function(req,res){
         return res.status(200).send({
@@ -19,10 +21,16 @@ var controller = {
         //Recoger los parametros de la peticion
         var params = req.body;
         //Validar los datos
-        var validate_name = !validator.isEmpty(params.name);
-        var validate_surname = !validator.isEmpty(params.surname);
-        var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
-        var validate_password = !validator.isEmpty(params.password);
+        try{
+            var validate_name = !validator.isEmpty(params.name);
+            var validate_surname = !validator.isEmpty(params.surname);
+            var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
+            var validate_password = !validator.isEmpty(params.password);
+        }catch(err){
+            return res.status(200).send({
+                message:"Faltan datos por enviar"
+            });
+        }
         //console.log(validate_name,validate_surname,validate_email,validate_password);
         if(validate_name && validate_surname && validate_email &&validate_password){
             //Crear objeto de usuario
@@ -84,8 +92,14 @@ var controller = {
         //recoger datos
         var params = req.body;
         //validar datos
-        var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
-        var validate_password = !validator.isEmpty(params.password);
+        try{
+            var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
+            var validate_password = !validator.isEmpty(params.password);
+        }catch(err){
+            return res.status(200).send({
+                message:"Faltan datos por enviar"
+            });
+        }
         if(!validate_email || !validate_password){
             return res.status(500).send({
                 message:"Datos incorrectos"
@@ -136,11 +150,102 @@ var controller = {
         
     },
     update: function(req,res){
-        //crear middleware  para comprobar el jwt token, ponerselo a la ruta
+        //RECOGER DATOS DEL USUARIO
+        var params =req.body;
+        //VALIDAR DATOS
+        //Validar los datos
+        try{
+        var validate_name = !validator.isEmpty(params.name);
+        var validate_surname = !validator.isEmpty(params.surname);
+        var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
+        }catch(err){
+            return res.status(200).send({
+                message:"Faltan datos por enviar"
+            });
+        }
+        //ELIMINAR PROPIEDADES INNECESARIAS
+        delete params.password;
+        //comprobar email
+            if(req.user.email != params.email){
+                User.findOne({email:params.email.toLowerCase()},(err,user)=>{
+                    if(err){
+                        return res.status(500).send({
+                            message:"Error al intentar identificarse"
+                        });
+                    }
+                    if(user && user._id!= req.user.sub){
+                        return res.status(200).send({
+                            message:"El email no puede ser modificado"
+                        });
+                    }else{
+                        //BUSCAR Y ACTUALIZAR DOCUMENTO
+                        var userId = req.user.sub;
+                        User.findOneAndUpdate({_id:userId}, params,{new:true},(err,userUpdated)=>{
+                            if(err || !userUpdated){
+                                return res.status(500).send({
+                                    status:'error',
+                                    message:'Error al actualizar usuario'
+                                });
+                            }
+                            //DEVOLVER RESPUESTA
+                            return res.status(200).send({
+                                status:'success',
+                                userUpdated
+                            });
+                        } );
+                    }
+            });
+        }
         
-        return res.status(200).send({
-            message:"update"
-        });
+        
+    },
+    uploadAvatar: function(req,res){
+        //Configurar el modulo multiparty en ruter
+        //Recoger el fichero de la peticion
+        var file_name = 'Avatar no subido...';
+        
+        if(!req.files.file0){
+            return res.status(200).send({
+                status:'err',
+                message:'no se existe avatar'
+            });
+        }
+        //Conseguir el nombre y la extension
+        var file_path= req.files.file0.path;
+        var file_split = file_path.split('\\');
+        //advertencia en linux o mac  var file_split = file_path.split('/');
+        var file_name = file_split[2]; //nombre
+        var ext_split = file_name.split('\.');
+        var file_ext = ext_split[1]; //extencion
+        //comprobar solo imagen y borrar si no es valida
+        if(file_ext!='png' && file_ext!='jpg' && file_ext!='jpeg' && file_ext!='gif'){
+            fs.unlink(file_path,(err)=>{
+                return res.status(200).send({
+                    status:'error',
+                    message:'La extensión del archivo no es valida'
+                });
+            });
+        }else{
+            //sacar el id fel usuario identificado
+            var userId = req.user.sub;
+            //buscar y actualizar documento db
+            User.findOneAndUpdate({_id:userId},{image:file_name},{new:true},(err,userUpdated)=>{
+                if(err || !userUpdated){
+                    return res.status(200).send({
+                        status:'error',
+                        message:'Error al actualizar el Usuario'
+                    });
+                }
+                //Devolver respuesta
+                return res.status(200).send({
+                    status:'success',
+                    message:'Upload Avatar',
+                    userUpdated
+                });
+            });
+            
+        }
+        
     }
 };
 module.exports = controller;
