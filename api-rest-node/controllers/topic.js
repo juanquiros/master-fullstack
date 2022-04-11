@@ -29,6 +29,7 @@ var controller = {
             topic.content = params.content;
             topic.code = params.code;
             topic.lang = params.lang;
+            topic.user = req.user.sub;
             //guardar
             topic.save((err,topicStored)=>{
                 if(err || !topicStored){
@@ -52,14 +53,115 @@ var controller = {
         }
     },
     getTopics: function(req,res){
-        //cargar la libreria de paginacion en la clase
+        //cargar la libreria de paginacion en la clase (en el modelo)
+        
         //recoger la pagina actual
+        var page = req.params.page;
+        if( page==undefined || req.params.page == 0 || req.params.page == "0"){
+            page = 1;
+        }else{
+            page = parseInt(page);
+        }
         //indicar las opciones de paginacion
+        var options = {
+            short:{date:-1},//desendente
+            populate:'user', //cargar objeto user
+            limit:5,
+            page:page
+        }
         //find paginado
-        // devolver resultado (topics, total de topics, total de paginas)
-        return res.status(200).send({
-            message:'Este es el metodo get topics'
+        Topic.paginate({},options,(err,topics)=>{
+            if(err){
+                return res.status(500).send({
+                    status:'error',
+                    message:'Error al hacer consulta'
+                });
+            }
+            if(!topics){
+                return res.status(404).send({
+                    status:'notFound',
+                    message:'No hay topics'
+                });
+            }
+            // devolver resultado (topics, total de topics, total de paginas)
+            return res.status(200).send({
+                status:'success',
+                topics: topics.docs,
+                totalDocs:topics.totalDocs,
+                totalPage:topics.totlPage
+            });
         });
+        
+    },
+    getTopicsByUser: function(req,res){
+        //get user_id
+        var userId = req.params.user;
+        var page = req.params.page;
+        if( page==undefined || req.params.page == 0 || req.params.page == "0"){
+            page = 1;
+        }else{
+            page = parseInt(page);
+        }
+        //indicar las opciones de paginacion
+        var options = {
+            short:{date:-1},//desendente
+            populate:'user', //cargar objeto user
+            limit:5,
+            page:page
+        }
+        //find con la condicion de usuario
+        Topic.paginate({user:userId},options,(err,topics)=>{
+                if(err){
+                    //devolver resultado
+                    return res.status(500).send({
+                        status:'error',
+                        message: 'Error en la peticion'
+                    });
+                }
+                if(!topics || topics.length == 0){
+                    //devolver resultado
+                    return res.status(404).send({
+                        status:'error',
+                        message:'No hay temas para mostrar'
+                    });
+                }
+                //devolver resultado
+                    return res.status(200).send({
+                        status:'success',
+                        topics
+                    });
+                    });
+        
+        
+        
+    },
+    getTopic:function(req, res){
+        //sacar id del topic de la url
+        var topicId = req.params.id;
+        //find por id del topic
+        Topic.findById(topicId)
+            .populate('user')
+            .exec((err,topic)=>{
+                if(err){
+                    return res.status(500).send({
+                        status:'error',
+                        message:'Error en la peticion',
+                        sv_err:err.message
+                    });
+                }
+                if(!topic || topic.length ==0){
+                    return res.status(404).send({
+                        status:'error',
+                        message:'No hay topic para mostrar'
+                    });
+                }
+                return res.status(200).send({
+                    status:'success',
+                    topic
+                });
+            });
+
+        
     }
 }
 
