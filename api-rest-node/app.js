@@ -8,11 +8,13 @@ var bodyParser = require('body-parser');
 var app = express();
 //Cargar archivos de rutas
 var user_routes = require('./routes/user');
+var topic_routes = require('./routes/topic');
 //Middlewares
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 //CORS
 //Rescribir rutas
 app.use('/api', user_routes);
+app.use('/api', topic_routes);
 //Exportar Modulo
 module.exports = app;
