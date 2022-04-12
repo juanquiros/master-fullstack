@@ -11,4 +11,5 @@ router.post('/topic',md_auth.authenticated,TopicsController.save);
 router.get('/topics/:page?',TopicsController.getTopics);
 router.get('/user-topics/:user/:page?',TopicsController.getTopicsByUser);
 router.get('/topic/:id',TopicsController.getTopic);
+router.put('/topic/:id',md_auth.authenticated,TopicsController.update);
 module.exports = router;

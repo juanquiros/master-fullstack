@@ -162,6 +162,60 @@ var controller = {
             });
 
         
+    },
+    update:function(req,res){
+        //Recoger el id del topic 
+        var topicId = req.params.id;
+        //Recoger los datos
+        var data = req.body;
+        //validar los datos
+        try{
+            var validate_title = !validator.isEmpty(params.title);
+            var validate_content = !validator.isEmpty(params.content);
+            var validate_lang = !validator.isEmpty(params.lang);
+
+        }catch(err){
+            return res.status(200).send({
+                message : 'Faltan datos por enviar'
+            });
+        }
+        if(validate_lang && validate_content && validate_title){
+            //Montar un json con los datos modificados
+            var update = {
+                title: params.title,
+                content: params.content,
+                code:params.code,
+                lang:params.lang
+            }
+            //find por id de topic y id de usuario
+            Topic.findOneAndUpdate({_id:topicId,user:req.user.sub},update,{new:true},(err,topicUpdate)=>{
+                if(err){
+                    return res.status(500).send({
+                        status:'error',
+                        message:'Error en la petición'
+                    });
+                }
+                if(!topicUpdate || topicUpdate.length ==0){
+                    return res.status(404).send({
+                        status:'error',
+                        message:'No se ah actualizado el tema'
+                    });
+                }
+                //devolver respuesta
+                return res.status(200).send({
+                    status:'success',
+                    topicUpdate
+                });
+            });
+            
+        }else{
+            return res.status(200).send({
+                message : 'Los datos no son correctos'
+            });
+        }
+
+        
+        
     }
 }
 
